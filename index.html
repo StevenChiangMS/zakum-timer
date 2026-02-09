@@ -5,9 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Artale 炎魔助手 - 模式手動切換版</title>
     <style>
-        body { font-family: -apple-system, sans-serif; background: #000; color: #fff; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
-        .setting-box { background: #222; width: 100%; max-width: 400px; padding: 10px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #444; text-align: center; }
-        .card { background: #1a1a1a; width: 100%; max-width: 400px; padding: 20px; border-radius: 20px; text-align: center; margin-bottom: 15px; border: 1px solid #333; position: relative; }
+        /* 1. 確保 body 撐滿螢幕並加入水平 padding */
+        body { 
+            font-family: -apple-system, sans-serif; 
+            background: #000; 
+            color: #fff; 
+            margin: 0; 
+            padding: 15px 10px; /* 增加左右 10px 的安全間距 */
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            box-sizing: border-box; /* 確保 padding 不會撐破寬度 */
+        }
+        
+        /* 2. 修改容器，使其在手機上為 100% 寬度，最大不超過 400px */
+        .setting-box { 
+            background: #222; 
+            width: 100%; 
+            max-width: 400px; 
+            padding: 10px; 
+            border-radius: 12px; 
+            margin-bottom: 15px; 
+            border: 1px solid #444; 
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .card { 
+            background: #1a1a1a; 
+            width: 100%; 
+            max-width: 400px; 
+            padding: 20px; 
+            border-radius: 20px; 
+            text-align: center; 
+            margin-bottom: 15px; 
+            border: 1px solid #333; 
+            position: relative; 
+            box-sizing: border-box; /* 確保內邊距計算正確 */
+        }
         
         .card-loop { border-left: 8px solid #00ffcc; }
         .card-time { border-left: 8px solid #feca57; }
@@ -15,14 +50,15 @@
         .title { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
         .timer-display { font-size: 4.5rem; font-family: 'Courier New', monospace; font-weight: bold; margin: 5px 0; }
         
-        .btn { padding: 12px; font-size: 1.1rem; cursor: pointer; border: none; border-radius: 12px; width: 100%; height: 100px; font-weight: bold; -webkit-appearance: none; margin-bottom: 20px; }
+        /* 調整按鈕在手機上的間距 */
+        .btn { padding: 12px; font-size: 1.1rem; cursor: pointer; border: none; border-radius: 12px; width: 100%; height: 80px; font-weight: bold; -webkit-appearance: none; margin-bottom: 15px; }
         .start-btn { background: #444; color: #fff; }
         .delay-btn { background: #2e86de; color: #fff; font-size: 0.9rem; }
-        .mode-btn { background: #d35400; color: #fff; font-size: 0.9rem; } /* 橘色按鈕 */
+        .mode-btn { background: #d35400; color: #fff; font-size: 0.9rem; }
         
         .active-loop { background: #00ffcc !important; color: #000 !important; }
         .active-time { background: #feca57 !important; color: #000 !important; }
-        .stop-btn { background: #ff4757; color: #fff; font-size: 0.8rem; padding: 5px; margin-top: 5px; }
+        .stop-btn { background: #ff4757; color: #fff; font-size: 0.8rem; padding: 5px; margin-top: 5px; height: auto; }
 
         .water-color { color: #54a0ff; }
         .cube-color { color: #ff9ff3; }
@@ -44,9 +80,9 @@
     <div id="loop-status" class="title water-color">下一階段：黑水</div>
     <div id="loop-timer" class="timer-display">40</div>
     <button class="btn start-btn" id="loopBtn" onclick="startLoop()">開始 / 機制對齊重置</button>
-    <div style="display: flex; gap: 5px;">
-        <button class="btn mode-btn" onclick="toggleLoopMode()">🔄 切換 黑水/魔方</button>
-        <button class="btn delay-btn"" onclick="addLoopTime(10)">+10秒延遲</button>
+    <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+        <button class="btn mode-btn" style="height: 60px; margin-bottom: 0;" onclick="toggleLoopMode()">🔄 切換 黑水/魔方</button>
+        <button class="btn delay-btn" style="height: 60px; margin-bottom: 0;" onclick="addLoopTime(10)">+10秒延遲</button>
     </div>
     <button class="btn stop-btn" onclick="stopLoop()">停止計時</button>
 </div>
@@ -55,14 +91,11 @@
     <div id="time-title" class="title" style="color:#feca57">時間魔方 (2:30)</div>
     <div id="time-timer" class="timer-display" style="color:#feca57">02:30</div>
     <button class="btn start-btn" id="timeBtn" onclick="startTimeTimer()">開始 / 出生對齊</button>
-    <!--<div style="display: flex; gap: 5px;">
-        <button class="btn mode-btn" onclick="setTimeMode(90)">切換 1:30</button>
-        <button class="btn mode-btn" style="background:#7f8c8d;" onclick="setTimeMode(150)">切換 2:30</button>
-    </div>-->
     <button class="btn stop-btn" onclick="stopTimeTimer()">停止計時</button>
 </div>
 
 <script>
+    // ... JavaScript 保持不變 ...
     let speechRate = 1.5;
     function updateRate(val) { speechRate = val; document.getElementById('rateValue').innerText = val; }
 
@@ -78,16 +111,14 @@
         window.speechSynthesis.speak(new SpeechSynthesisUtterance(" "));
     }
 
-    // --- 黑水/雙魔方邏輯 ---
     let loopSeconds = 40;
     let loopInterval = null;
     let loopMode = "water";
     let loopSpoken10 = false, loopSpoken3 = false;
 
-    // 手動切換 黑水/魔方 模式
     function toggleLoopMode() {
         loopMode = (loopMode === "water" ? "cube" : "water");
-        loopSpoken10 = false; // 切換模式後重置報時，避免跳過提醒
+        loopSpoken10 = false;
         loopSpoken3 = false;
         updateLoopUI();
     }
@@ -101,8 +132,6 @@
     function startLoop() {
         unlock(); clearInterval(loopInterval);
         loopSeconds = 40; 
-        // 點擊開始時預設從黑水開始，若需要維持當前模式可將下面這行註解
-        // loopMode = "water"; 
         loopSpoken10 = false; loopSpoken3 = false;
         document.getElementById('loopBtn').classList.add('active-loop');
         loopInterval = setInterval(() => {
@@ -132,20 +161,10 @@
         loopSeconds <= 6 ? el.classList.add('blink') : el.classList.remove('blink');
     }
 
-    // --- 時間魔方邏輯 ---
     let timeMax = 150;
     let timeSeconds = 150;
     let timeInterval = null;
     let timeSpoken10 = false, timeSpoken3 = false;
-
-    function setTimeMode(sec) {
-        timeMax = sec;
-        timeSeconds = sec;
-        const m = Math.floor(sec / 60), s = sec % 60;
-        document.getElementById('time-title').innerText = `時間魔方 (${m}:${String(s).padStart(2, '0')})`;
-        updateTimeUI();
-        if (timeInterval) startTimeTimer(); 
-    }
 
     function startTimeTimer() {
         unlock(); clearInterval(timeInterval);
