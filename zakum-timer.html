@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Artale 炎魔助手 - 模式手動切換版</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; background: #000; color: #fff; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        .setting-box { background: #222; width: 100%; max-width: 400px; padding: 10px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #444; text-align: center; }
+        .card { background: #1a1a1a; width: 100%; max-width: 400px; padding: 20px; border-radius: 20px; text-align: center; margin-bottom: 15px; border: 1px solid #333; position: relative; }
+        
+        .card-loop { border-left: 8px solid #00ffcc; }
+        .card-time { border-left: 8px solid #feca57; }
+
+        .title { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
+        .timer-display { font-size: 4.5rem; font-family: 'Courier New', monospace; font-weight: bold; margin: 5px 0; }
+        
+        .btn { padding: 12px; font-size: 1.1rem; cursor: pointer; border: none; border-radius: 12px; width: 100%; height: 100px; font-weight: bold; -webkit-appearance: none; margin-bottom: 20px; }
+        .start-btn { background: #444; color: #fff; }
+        .delay-btn { background: #2e86de; color: #fff; font-size: 0.9rem; }
+        .mode-btn { background: #d35400; color: #fff; font-size: 0.9rem; } /* 橘色按鈕 */
+        
+        .active-loop { background: #00ffcc !important; color: #000 !important; }
+        .active-time { background: #feca57 !important; color: #000 !important; }
+        .stop-btn { background: #ff4757; color: #fff; font-size: 0.8rem; padding: 5px; margin-top: 5px; }
+
+        .water-color { color: #54a0ff; }
+        .cube-color { color: #ff9ff3; }
+        .blink { animation: blinker 0.4s linear infinite; color: #ff4757 !important; }
+        @keyframes blinker { 50% { opacity: 0.3; } }
+        
+        input[type=range] { width: 90%; margin-top: 5px; }
+        label { font-size: 0.8rem; color: #aaa; }
+    </style>
+</head>
+<body>
+
+<div class="setting-box">
+    <label>語音速度: <span id="rateValue">1.5</span>x</label><br>
+    <input type="range" id="rateRange" min="0.5" max="2.0" step="0.1" value="1.5" oninput="updateRate(this.value)">
+</div>
+
+<div class="card card-loop">
+    <div id="loop-status" class="title water-color">下一階段：黑水</div>
+    <div id="loop-timer" class="timer-display">40</div>
+    <button class="btn start-btn" id="loopBtn" onclick="startLoop()">開始 / 機制對齊重置</button>
+    <div style="display: flex; gap: 5px;">
+        <button class="btn mode-btn" onclick="toggleLoopMode()">🔄 切換 黑水/魔方</button>
+        <button class="btn delay-btn"" onclick="addLoopTime(10)">+10秒延遲</button>
+    </div>
+    <button class="btn stop-btn" onclick="stopLoop()">停止計時</button>
+</div>
+
+<div class="card card-time">
+    <div id="time-title" class="title" style="color:#feca57">時間魔方 (2:30)</div>
+    <div id="time-timer" class="timer-display" style="color:#feca57">02:30</div>
+    <button class="btn start-btn" id="timeBtn" onclick="startTimeTimer()">開始 / 出生對齊</button>
+    <!--<div style="display: flex; gap: 5px;">
+        <button class="btn mode-btn" onclick="setTimeMode(90)">切換 1:30</button>
+        <button class="btn mode-btn" style="background:#7f8c8d;" onclick="setTimeMode(150)">切換 2:30</button>
+    </div>-->
+    <button class="btn stop-btn" onclick="stopTimeTimer()">停止計時</button>
+</div>
+
+<script>
+    let speechRate = 1.5;
+    function updateRate(val) { speechRate = val; document.getElementById('rateValue').innerText = val; }
+
+    function speak(text) {
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = 'zh-TW';
+        msg.rate = speechRate;
+        window.speechSynthesis.speak(msg);
+    }
+
+    function unlock() {
+        window.speechSynthesis.speak(new SpeechSynthesisUtterance(" "));
+    }
+
+    // --- 黑水/雙魔方邏輯 ---
+    let loopSeconds = 40;
+    let loopInterval = null;
+    let loopMode = "water";
+    let loopSpoken10 = false, loopSpoken3 = false;
+
+    // 手動切換 黑水/魔方 模式
+    function toggleLoopMode() {
+        loopMode = (loopMode === "water" ? "cube" : "water");
+        loopSpoken10 = false; // 切換模式後重置報時，避免跳過提醒
+        loopSpoken3 = false;
+        updateLoopUI();
+    }
+
+    function addLoopTime(sec) {
+        loopSeconds += sec;
+        loopSpoken10 = false; loopSpoken3 = false;
+        updateLoopUI();
+    }
+
+    function startLoop() {
+        unlock(); clearInterval(loopInterval);
+        loopSeconds = 40; 
+        // 點擊開始時預設從黑水開始，若需要維持當前模式可將下面這行註解
+        // loopMode = "water"; 
+        loopSpoken10 = false; loopSpoken3 = false;
+        document.getElementById('loopBtn').classList.add('active-loop');
+        loopInterval = setInterval(() => {
+            loopSeconds--;
+            if (loopSeconds === 10 && !loopSpoken10) { speak(loopMode === "water" ? "十秒後黑水" : "十秒後雙魔方"); loopSpoken10 = true; }
+            if (loopSeconds === 3 && !loopSpoken3) { speak(loopMode === "water" ? "黑水，黑水" : "雙魔方，雙魔方"); loopSpoken3 = true; }
+            if (loopSeconds <= 0) { 
+                loopMode = (loopMode === "water" ? "cube" : "water"); 
+                loopSeconds = 40; loopSpoken10 = false; loopSpoken3 = false; 
+            }
+            updateLoopUI();
+        }, 1000);
+    }
+
+    function stopLoop() {
+        clearInterval(loopInterval);
+        document.getElementById('loopBtn').classList.remove('active-loop');
+        loopSeconds = 40; updateLoopUI();
+    }
+
+    function updateLoopUI() {
+        const el = document.getElementById('loop-timer');
+        const st = document.getElementById('loop-status');
+        el.innerText = loopSeconds;
+        st.innerText = loopMode === "water" ? "下一階段：黑水" : "下一階段：雙魔方";
+        st.className = "title " + (loopMode === "water" ? "water-color" : "cube-color");
+        loopSeconds <= 6 ? el.classList.add('blink') : el.classList.remove('blink');
+    }
+
+    // --- 時間魔方邏輯 ---
+    let timeMax = 150;
+    let timeSeconds = 150;
+    let timeInterval = null;
+    let timeSpoken10 = false, timeSpoken3 = false;
+
+    function setTimeMode(sec) {
+        timeMax = sec;
+        timeSeconds = sec;
+        const m = Math.floor(sec / 60), s = sec % 60;
+        document.getElementById('time-title').innerText = `時間魔方 (${m}:${String(s).padStart(2, '0')})`;
+        updateTimeUI();
+        if (timeInterval) startTimeTimer(); 
+    }
+
+    function startTimeTimer() {
+        unlock(); clearInterval(timeInterval);
+        timeSeconds = timeMax;
+        timeSpoken10 = false; timeSpoken3 = false;
+        document.getElementById('timeBtn').classList.add('active-time');
+        timeInterval = setInterval(() => {
+            timeSeconds--;
+            if (timeSeconds === 10 && !timeSpoken10) { speak("十秒後時間魔方"); timeSpoken10 = true; }
+            if (timeSeconds === 3 && !timeSpoken3) { speak("時間魔方，時間魔方"); timeSpoken3 = true; }
+            if (timeSeconds <= 0) { timeSeconds = timeMax; timeSpoken10 = false; timeSpoken3 = false; }
+            updateTimeUI();
+        }, 1000);
+    }
+
+    function stopTimeTimer() {
+        clearInterval(timeInterval);
+        document.getElementById('timeBtn').classList.remove('active-time');
+        timeSeconds = timeMax; updateTimeUI();
+    }
+
+    function updateTimeUI() {
+        const el = document.getElementById('time-timer');
+        const m = Math.floor(timeSeconds / 60), s = timeSeconds % 60;
+        el.innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        timeSeconds <= 10 ? el.classList.add('blink') : el.classList.remove('blink');
+    }
+</script>
+</body>
+</html>
