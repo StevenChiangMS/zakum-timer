@@ -27,6 +27,10 @@
         
         .card-loop { border-left: 8px solid #00ffcc; }
         .card-time { border-left: 8px solid #feca57; }
+        .card-smoke-time { border-left: 8px solid #a5a5a5; }
+
+        .smoke-cd-color { color: #576574 !important; }
+        .active-smoke { background: #a5a5a5 !important; color: #000 !important; }
 
         .title { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
         .timer-display { font-size: 4.5rem; font-family: 'Courier New', monospace; font-weight: bold; margin: 5px 0; }
@@ -113,6 +117,32 @@
         <span class="info-icon" data-tippy-content="開場招喚炎魔時點擊，<br />用於預測時間魔方。<br />(本體第三階段不適用)">ⓘ</span>
     </div>
     <button class="btn stop-btn" onclick="stopTimeTimer()">停止計時</button>
+</div>
+
+<div class="card card-smoke-time">
+    <div id="smoke-status" class="title" style="color:#a5a5a5">煙霧彈計時器 (Lv.20)</div>
+    <div id="smoke-timer" class="timer-display" style="color:#a5a5a5">50</div>
+
+    <div id="smoke-ctrl">
+        <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 15px; gap: 10px;">
+            <label style="color: #fff;">等級:</label>
+            <select id="smokeLevel" onchange="initSmoke()" style="padding: 5px 10px; border-radius: 8px; background: #333; color: #fff; border: 1px solid #666;">
+                <script>
+                    for(let i=1; i<=30; i++) {
+                        document.write(`<option value="${i}" ${i==20?'selected':''}>Lv.${i}</option>`);
+                    }
+                </script>
+            </select>
+            <span class="info-icon" data-tippy-content="煙霧結束後將自動進入 10 分鐘 CD 倒數。">ⓘ</span>
+        </div>
+    </div>
+
+    <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 20px;">
+        <button class="btn start-btn" id="smokeBtn" onclick="startSmoke()">
+            施放煙霧彈
+        </button>
+    </div>
+    <button class="btn stop-btn" onclick="stopSmoke()">停止計時 / 重置</button>
 </div>
 
 <script src="https://unpkg.com/@popperjs/core@2"></script>
@@ -224,6 +254,80 @@
         el.innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
         timeSeconds <= 10 ? el.classList.add('blink') : el.classList.remove('blink');
     }
+let smokeSeconds = 50;
+    let smokeInterval = null;
+    let isCDMode = false;
+    let smokeSpoken10 = false, smokeSpoken3 = false, smokeSpokenCD = false;
+
+    function initSmoke() {
+        isCDMode = false;
+        const level = parseInt(document.getElementById('smokeLevel').value);
+        smokeSeconds = 30 + level;
+        document.getElementById('smoke-status').innerText = `煙霧彈計時器 (Lv.${level})`;
+        document.getElementById('smoke-status').className = "title";
+        document.getElementById('smoke-timer').className = "timer-display";
+        document.getElementById('smoke-ctrl').style.display = "block";
+        updateSmokeUI();
+    }
+
+    function startSmoke() {
+        unlock(); clearInterval(smokeInterval);
+        isCDMode = false;
+        const level = parseInt(document.getElementById('smokeLevel').value);
+        smokeSeconds = 30 + level;
+        smokeSpoken10 = false; smokeSpoken3 = false; smokeSpokenCD = false;
+        
+        document.getElementById('smokeBtn').classList.add('active-smoke');
+        document.getElementById('smoke-ctrl').style.display = "none";
+        speak("煙霧彈已施放");
+
+        smokeInterval = setInterval(() => {
+            smokeSeconds--;
+
+            if (!isCDMode) {
+                if (smokeSeconds === 10 && !smokeSpoken10) { speak("煙霧剩餘十秒"); smokeSpoken10 = true; }
+                if (smokeSeconds === 3 && !smokeSpoken3) { speak("煙霧即將結束"); smokeSpoken3 = true; }
+                
+                if (smokeSeconds <= 0) {
+                    isCDMode = true;
+                    smokeSeconds = 600;
+                    speak("煙霧結束，開始冷卻十分鐘");
+                    document.getElementById('smoke-status').innerText = "煙霧彈冷卻中 (CD)";
+                    document.getElementById('smoke-status').classList.add('smoke-cd-color');
+                    document.getElementById('smoke-timer').classList.add('smoke-cd-color');
+                }
+            } else {
+                // --- CD 期間的邏輯 ---
+                if (smokeSeconds === 60 && !smokeSpokenCD) { speak("煙霧彈冷卻剩餘一分鐘"); smokeSpokenCD = true; }
+                if (smokeSeconds <= 0) {
+                    speak("煙霧彈冷卻結束，可以再次施放");
+                    stopSmoke();
+                }
+            }
+            updateSmokeUI();
+        }, 1000);
+    }
+
+    function stopSmoke() {
+        clearInterval(smokeInterval);
+        document.getElementById('smokeBtn').classList.remove('active-smoke');
+        initSmoke();
+    }
+
+    function updateSmokeUI() {
+        const el = document.getElementById('smoke-timer');
+        if (!isCDMode) {
+            el.innerText = smokeSeconds;
+            smokeSeconds <= 5 ? el.classList.add('blink') : el.classList.remove('blink');
+        } else {
+            const m = Math.floor(smokeSeconds / 60);
+            const s = smokeSeconds % 60;
+            el.innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            el.classList.remove('blink');
+        }
+    }
+
+    window.addEventListener('load', initSmoke);
 </script>
 </body>
 <footer>
