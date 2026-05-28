@@ -290,7 +290,7 @@ let smokeSeconds = 50;
                 
                 if (smokeSeconds <= 0) {
                     isCDMode = true;
-                    smokeSeconds = 600;
+                    smokeSeconds = 600 - (30 + level);
                     speak("煙霧結束，開始冷卻十分鐘");
                     document.getElementById('smoke-status').innerText = "煙霧彈冷卻中 (CD)";
                     document.getElementById('smoke-status').classList.add('smoke-cd-color');
