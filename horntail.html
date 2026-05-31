@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Artale 龍王助手</title>
+  <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/dist/tippy.css" />
+  <link rel="stylesheet" href="./style.css" />
+  <link rel="icon" type="image/png" href="favicon.png">
+</head>
+
+<body>
+
+<div class="setting-box">
+    <label>語音速度: <span id="rateValue">1.2</span>x</label><br>
+     <input type="range" id="rateRange" min="0.5" max="2.0" step="0.1" value="1.2" oninput="updateRate(this.value)">
+</div>
+
+<div style="width:100%;max-width:400px;margin-bottom:15px;">
+    <button
+        class="btn back-btn"
+        onclick="location.href='index.html'">
+        🔥 返回炎魔助手
+    </button>
+</div>
+
+<div class="card card-dispel">
+
+<div class="title" style="color:#ff6b6b;">
+    左手消技
+</div>
+
+<div id="dispel-timer"
+    class="timer-display"
+    style="color:#ff6b6b;">
+    01:30
+</div>
+
+<div style="display: flex; justify-content: center; align-items: center;">
+  <button
+      id="dispelBtn"
+      class="btn start-btn"
+      onclick="startDispelTimer()">
+      開始 / 對齊
+  </button>
+  <span class="info-icon" data-tippy-content="當龍王左手施放消除技能時點擊，<br />再次點擊可讓計時與機制完全同步。">ⓘ</span>
+</div>
+
+<button
+    class="btn stop-btn"
+    onclick="stopDispelTimer()">
+    停止計時
+</button>
+
+</div>
+
+<div class="card card-seal">
+
+<div class="title" style="color:#9b59b6;">
+    黑鎖
+</div>
+
+<div id="seal-timer"
+    class="timer-display"
+    style="color:#9b59b6;">
+    30
+</div>
+
+<div style="display: flex; justify-content: center; align-items: center;">
+  <button
+      id="sealBtn"
+      class="btn start-btn"
+      onclick="startSealTimer()">
+      開始 / 對齊
+  </button>
+  <span class="info-icon" data-tippy-content="當龍王中頭施放黑鎖時點擊，<br />(中頭血量低於50%)<br />再次點擊可讓計時與機制完全同步。">ⓘ</span>
+</div>
+
+<button
+    class="btn stop-btn"
+    onclick="stopSealTimer()">
+    停止計時
+</button>
+
+</div>
+
+<div class="card card-smoke-time">
+    <div id="smoke-status" class="title" style="color:#a5a5a5">煙霧彈計時器 (Lv.20)</div>
+    <div id="smoke-timer" class="timer-display" style="color:#a5a5a5">50</div>
+
+    <div id="smoke-ctrl">
+        <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 15px; gap: 10px;">
+            <label style="color: #fff;">等級:</label>
+            <select id="smokeLevel" onchange="initSmoke()" style="padding: 5px 10px; border-radius: 8px; background: #333; color: #fff; border: 1px solid #666;">
+                <script>
+                    for(let i=1; i<=30; i++) {
+                        document.write(`<option value="${i}" ${i==20?'selected':''}>Lv.${i}</option>`);
+                    }
+                </script>
+            </select>
+            <span class="info-icon" data-tippy-content="煙霧結束後將自動進入 10 分鐘 CD 倒數。">ⓘ</span>
+        </div>
+    </div>
+
+    <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 20px;">
+        <button class="btn start-btn" id="smokeBtn" onclick="startSmoke()">
+            施放煙霧彈
+        </button>
+    </div>
+    <button class="btn stop-btn" onclick="stopSmoke()">停止計時 / 重置</button>
+</div>
+
+<script src="https://unpkg.com/@popperjs/core@2"></script>
+<script src="https://unpkg.com/tippy.js@6"></script>
+
+<script>
+  let speechRate = 1.2;
+  let dispelMax = 90;
+  let dispelSeconds = 90;
+  let dispelInterval = null;
+
+  let dispelSpoken10 = false;
+  let dispelSpoken3 = false;
+
+  let sealMax = 30;
+  let sealSeconds = 30;
+  let sealInterval = null;
+
+  let sealSpoken10 = false;
+  let sealSpoken3 = false;
+
+      // 初始化 Tooltip
+    tippy('[data-tippy-content]', {
+        theme: 'material',
+        // trigger: 'click', // 手機版建議點擊觸發
+        placement: 'top',
+        arrow: true,
+        allowHTML: true,
+    });
+
+  function updateRate(val) { speechRate = val; document.getElementById('rateValue').innerText = val; }
+        function speak(text) {
+          window.speechSynthesis.cancel();
+          const msg = new SpeechSynthesisUtterance(text);
+          msg.lang = 'zh-TW';
+          msg.rate = speechRate;
+          window.speechSynthesis.speak(msg);
+      }
+
+      function unlock() {
+          window.speechSynthesis.speak(new SpeechSynthesisUtterance(" "));
+      }
+
+      function startDispelTimer() {
+
+      unlock();
+
+      clearInterval(dispelInterval);
+
+      dispelSeconds = dispelMax;
+      dispelSpoken10 = false;
+      dispelSpoken3 = false;
+
+      document
+          .getElementById('dispelBtn')
+          .classList.add('active');
+
+      updateDispelUI();
+
+      dispelInterval = setInterval(() => {
+
+          dispelSeconds--;
+
+          if (dispelSeconds === 10 && !dispelSpoken10) {
+              speak("十秒後消技");
+              dispelSpoken10 = true;
+          }
+
+          if (dispelSeconds === 3 && !dispelSpoken3) {
+              speak("消技，消技");
+              dispelSpoken3 = true;
+          }
+
+          if (dispelSeconds <= 0) {
+
+              speak("消技");
+
+              dispelSeconds = dispelMax;
+              dispelSpoken10 = false;
+              dispelSpoken3 = false;
+          }
+
+          updateDispelUI();
+
+      }, 1000);
+  }
+
+  function stopDispelTimer() {
+
+      clearInterval(dispelInterval);
+
+      document
+          .getElementById('dispelBtn')
+          .classList.remove('active');
+
+      dispelSeconds = dispelMax;
+
+      updateDispelUI();
+  }
+
+  function updateDispelUI() {
+
+      const el =
+          document.getElementById('dispel-timer');
+
+      const m =
+          Math.floor(dispelSeconds / 60);
+
+      const s =
+          dispelSeconds % 60;
+
+      el.innerText =
+          `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+      if (dispelSeconds <= 10) {
+          el.classList.add('blink');
+      } else {
+          el.classList.remove('blink');
+      }
+  }
+
+  function startSealTimer() {
+
+      unlock();
+
+      clearInterval(sealInterval);
+
+      sealSeconds = sealMax;
+      sealSpoken10 = false;
+      sealSpoken3 = false;
+
+      document
+          .getElementById('sealBtn')
+          .classList.add('active');
+
+      updateSealUI();
+
+      sealInterval = setInterval(() => {
+
+          sealSeconds--;
+
+          if (sealSeconds === 10 && !sealSpoken10) {
+              speak("十秒後黑鎖");
+              sealSpoken10 = true;
+          }
+
+          if (sealSeconds === 3 && !sealSpoken3) {
+              speak("黑鎖，黑鎖");
+              sealSpoken3 = true;
+          }
+
+          if (sealSeconds <= 0) {
+
+              speak("黑鎖");
+
+              sealSeconds = sealMax;
+              sealSpoken10 = false;
+              sealSpoken3 = false;
+          }
+
+          updateSealUI();
+
+      }, 1000);
+  }
+
+  function stopSealTimer() {
+
+      clearInterval(sealInterval);
+
+      document
+          .getElementById('sealBtn')
+          .classList.remove('active');
+
+      sealSeconds = sealMax;
+
+      updateSealUI();
+  }
+
+  function updateSealUI() {
+
+      const el =
+          document.getElementById('seal-timer');
+
+      el.innerText = sealSeconds;
+
+      if (sealSeconds <= 10) {
+          el.classList.add('blink');
+      } else {
+          el.classList.remove('blink');
+      }
+  }
+
+  let smokeSeconds = 50;
+    let smokeInterval = null;
+    let isCDMode = false;
+    let smokeSpoken10 = false, smokeSpoken3 = false, smokeSpokenCD = false;
+
+    function initSmoke() {
+        isCDMode = false;
+        const level = parseInt(document.getElementById('smokeLevel').value);
+        smokeSeconds = 30 + level;
+        document.getElementById('smoke-status').innerText = `煙霧彈計時器 (Lv.${level})`;
+        document.getElementById('smoke-status').className = "title";
+        document.getElementById('smoke-timer').className = "timer-display";
+        document.getElementById('smoke-ctrl').style.display = "block";
+        updateSmokeUI();
+    }
+
+    function startSmoke() {
+        unlock(); clearInterval(smokeInterval);
+        isCDMode = false;
+        const level = parseInt(document.getElementById('smokeLevel').value);
+        smokeSeconds = 30 + level;
+        smokeSpoken10 = false; smokeSpoken3 = false; smokeSpokenCD = false;
+        
+        document.getElementById('smokeBtn').classList.add('active-smoke');
+        document.getElementById('smoke-ctrl').style.display = "none";
+        speak("煙霧彈已施放");
+
+        smokeInterval = setInterval(() => {
+            smokeSeconds--;
+
+            if (!isCDMode) {
+                if (smokeSeconds === 10 && !smokeSpoken10) { speak("煙霧剩餘十秒"); smokeSpoken10 = true; }
+                if (smokeSeconds === 3 && !smokeSpoken3) { speak("煙霧即將結束"); smokeSpoken3 = true; }
+                
+                if (smokeSeconds <= 0) {
+                    isCDMode = true;
+                    smokeSeconds = 600 - (30 + level);
+                    speak("煙霧結束，開始冷卻十分鐘");
+                    document.getElementById('smoke-status').innerText = "煙霧彈冷卻中 (CD)";
+                    document.getElementById('smoke-status').classList.add('smoke-cd-color');
+                    document.getElementById('smoke-timer').classList.add('smoke-cd-color');
+                }
+            } else {
+                // --- CD 期間的邏輯 ---
+                if (smokeSeconds === 60 && !smokeSpokenCD) { speak("煙霧彈冷卻剩餘一分鐘"); smokeSpokenCD = true; }
+                if (smokeSeconds <= 0) {
+                    speak("煙霧彈冷卻結束，可以再次施放");
+                    stopSmoke();
+                }
+            }
+            updateSmokeUI();
+        }, 1000);
+    }
+
+    function stopSmoke() {
+        clearInterval(smokeInterval);
+        document.getElementById('smokeBtn').classList.remove('active-smoke');
+        initSmoke();
+    }
+
+    function updateSmokeUI() {
+        const el = document.getElementById('smoke-timer');
+        if (!isCDMode) {
+            el.innerText = smokeSeconds;
+            smokeSeconds <= 5 ? el.classList.add('blink') : el.classList.remove('blink');
+        } else {
+            const m = Math.floor(smokeSeconds / 60);
+            const s = smokeSeconds % 60;
+            el.innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            el.classList.remove('blink');
+        }
+    }
+
+    window.addEventListener('load', initSmoke);
+</script>
+
+<footer style="opacity:.4;padding:20px 0;">
+    <p>© 2026 Steven | Artale Horntail Helper v1.0.1</p>
+    <p>All rights reserved.</p>
+</footer>
+
+</body>
+</html>
