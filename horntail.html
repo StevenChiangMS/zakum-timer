@@ -173,18 +173,18 @@
           dispelSeconds--;
 
           if (dispelSeconds === 10 && !dispelSpoken10) {
-              speak("十秒後消技");
+              speak("十秒後左消");
               dispelSpoken10 = true;
           }
 
           if (dispelSeconds === 3 && !dispelSpoken3) {
-              speak("消技，消技");
+              speak("左消，左消");
               dispelSpoken3 = true;
           }
 
           if (dispelSeconds <= 0) {
 
-              speak("消技");
+              speak("左消");
 
               dispelSeconds = dispelMax;
               dispelSpoken10 = false;
