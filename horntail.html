@@ -86,8 +86,8 @@
 </div>
 
 <div class="card card-smoke-time">
-    <div id="smoke-status" class="title" style="color:#a5a5a5">煙霧彈計時器 (Lv.20)</div>
-    <div id="smoke-timer" class="timer-display" style="color:#a5a5a5">50</div>
+    <div id="smoke-status" class="title" style="color:#a5a5a5">煙霧彈計時器 (Lv.30)</div>
+    <div id="smoke-timer" class="timer-display" style="color:#a5a5a5">30</div>
 
     <div id="smoke-ctrl">
         <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 15px; gap: 10px;">
@@ -95,7 +95,7 @@
             <select id="smokeLevel" onchange="initSmoke()" style="padding: 5px 10px; border-radius: 8px; background: #333; color: #fff; border: 1px solid #666;">
                 <script>
                     for(let i=1; i<=30; i++) {
-                        document.write(`<option value="${i}" ${i==20?'selected':''}>Lv.${i}</option>`);
+                        document.write(`<option value="${i}" ${i==30?'selected':''}>Lv.${i}</option>`);
                     }
                 </script>
             </select>
@@ -301,7 +301,7 @@
       }
   }
 
-  let smokeSeconds = 50;
+  let smokeSeconds = 60;
     let smokeInterval = null;
     let isCDMode = false;
     let smokeSpoken10 = false, smokeSpoken3 = false, smokeSpokenCD = false;
@@ -378,7 +378,7 @@
 </script>
 
 <footer style="opacity:.4;padding:20px 0;">
-    <p>© 2026 Steven | Artale Horntail Helper v1.0.1</p>
+    <p>© 2026 Steven | Artale Horntail Helper v1.0.2</p>
     <p>All rights reserved.</p>
 </footer>
 
